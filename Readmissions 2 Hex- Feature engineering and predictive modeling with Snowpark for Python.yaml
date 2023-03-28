@@ -1,0 +1,457 @@
+schemaVersion: 2
+meta:
+  sourceVersionId: 5150b9dd-12ea-4304-a1fd-1eeccc037dc8 # DO NOT CHANGE - Hex uses this to match up project versions when reimporting the file
+  description: ""
+  projectId: b36107a4-3b10-4373-8196-60f29b0349bb # DO NOT CHANGE - Unique ID of the project from which this file was generated
+  title: "Readmissions 2: Feature engineering and predictive modeling with Snowpark for Python"
+  timezone: null
+  appTheme: SYS_PREF
+  codeLanguage: PYTHON
+  status: null
+  categories: []
+  castDecimalsDefault: true
+  logicQueryCacheTimeout: null
+  publishedQueryCacheTimeout: null
+projectAssets:
+  dataConnections:
+    - dataConnectionId: cc1bc38b-f270-4fe9-a1b9-06106161b0d8 # demo309 (snowflake)
+  envVars: []
+  secrets: []
+sharedAssets:
+  secrets: []
+  vcsPackages: []
+  dataConnections: []
+cells:
+  - cellType: CODE
+    cellId: c9664a53-cc2d-4a74-b9ff-b68c963bd60f # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: Code 0
+    config:
+      source: |-
+        # Import Python packages
+        import pandas as pd
+        import numpy as np
+        from itertools import combinations
+        import seaborn as sns
+        import os
+        import hextoolkit
+
+        # Import Snowflake modules
+        from snowflake.snowpark import Session 
+        import snowflake.snowpark.functions as F 
+        import snowflake.snowpark.types as T
+        from snowflake.snowpark import Window
+        from snowflake.snowpark.functions import col
+  - cellType: CODE
+    cellId: 2f705d00-830c-49e0-9abc-e723427b8836 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        hex_snowflake_conn = hextoolkit.get_data_connection('demo309')
+        session = hex_snowflake_conn.get_snowpark_session()
+        session.use_role('datasci')
+        session.use_warehouse('datasci_wh')
+        session.use_database('analytics')
+        session.use_schema('readmit')
+        print(session.sql("select current_role(), current_warehouse(), current_database(), current_schema(), current_region(), current_client()").collect())
+  - cellType: CODE
+    cellId: fb6fed3e-8802-498f-b581-3f408edc088d # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #Create a Snowpark dataframe to start manipulating our data
+        readmissions_df=session.table('readmissions_enriched')
+  - cellType: CODE
+    cellId: a0a3df54-9d37-457e-87b6-14cb150c80d8 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #Explore 10 rows of data
+        readmissions_df.sample(n=10).show()
+  - cellType: CODE
+    cellId: a8c1a4d5-f9dc-499a-9575-cfd0110bf4ff # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        # How large is this Snowpark dataframe? 
+        import sys
+        snowpark_size = sys.getsizeof(readmissions_df) / (1024*1024)
+        print(f"Snowpark DataFrame Size (snowpark_df): {snowpark_size:.2f} MB")
+  - cellType: CODE
+    cellId: b855d664-11fb-48eb-89d8-5a614df087e0 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #Select the columns that are most likely to correlate with our binary target. 
+        readmissions_df_features = readmissions_df.select("PATIENT_AGE", "BMI", "LENGTH_OF_STAY", "ORDER_SET_USED", "CHRONIC_CONDITIONS_NUMBER",  "SBUX_COUNT", "DV_READMIT_FLAG" )
+
+        # Filer Sort
+        nj_df = readmissions_df.filter(F.col("HOSPITAL_STATE") == 'NJ').order_by(["DV_READMIT_FLAG", "DIAGNOSIS"], ascending=[0, 0])
+
+        # Display
+        nj_df.show(n=20)
+  - cellType: CODE
+    cellId: aa298c75-8c36-4a25-bb0f-dbe35c5dcf40 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: nj_df.explain()
+  - cellType: CODE
+    cellId: 589df40d-a0ea-4ab9-a9ec-b3c51f86c119 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #Print Number of OBS
+        print('The total number of patients in the dataset is:',readmissions_df_features.count())
+        #Print Readmits
+        print('The number of patients with a readmission:',readmissions_df_features.filter(col('"DV_READMIT_FLAG"')==1).count())
+        #Print Nonreadmits
+        print('The number of patients without a readmission:',readmissions_df_features.filter(col('"DV_READMIT_FLAG"')==0).count())
+  - cellType: CODE
+    cellId: 4e101731-f0c3-44e8-b8c7-4edf3194c5cc # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #Display the count, mean, standard deviation, min, and max values for our variables
+        readmissions_df_features.describe().show()
+  - cellType: CODE
+    cellId: 0584053b-538b-48a7-8999-fbcf76728a6e # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #Count the number of null/missing values for each input value. Perhaps we may need to do some imputation
+        column_names=readmissions_df_features.columns
+        for i in column_names:
+            print('Column',i,'has',readmissions_df_features.filter(col(i).isNull()).count(),'missing values!')
+  - cellType: CODE
+    cellId: 8db292ad-7905-4a8a-a378-e803270a8204 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #Since our zip codes without any Starbucks locations show up as null, let's replace those missing values with 0 for our model
+        readmissions_df_features = readmissions_df_features.fillna(0, subset="SBUX_COUNT")
+        readmissions_df_features.show()
+  - cellType: CODE
+    cellId: 13bbc79c-ca49-48eb-bede-9c60a8a19d1d # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #No more missing values
+        for i in column_names:
+            print('Column',i,'has',readmissions_df_features.filter(col(i).isNull()).count(),'missing values!')
+  - cellType: CODE
+    cellId: 8a3c3132-9ca2-4e36-bbf3-67d762f7b79f # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |
+        #Visually examine the distribution of patient age to see if any transformations should be applied
+        ax = readmissions_df_features.to_pandas().hist(column="PATIENT_AGE", bins=20)
+  - cellType: CODE
+    cellId: d9d981f1-bbef-49d9-986a-067f7ef9cfa0 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #Create a pandas dataframe to put the correlations into.
+        corr_df=pd.DataFrame(columns=column_names,index=column_names,dtype=float)
+
+
+        #Calculate the correlations
+        for i,j in combinations(column_names,2):
+            corr_df.at[i,j]=round(readmissions_df_features.corr(col(i),col(j)),2)
+            corr_df.at[j,i]=corr_df.at[i,j] 
+
+        #The diagonal will always be set to 1 since it is matching variables
+        np.fill_diagonal(corr_df.values, 1.0)
+
+        #See the raw table
+        corr_df
+  - cellType: CODE
+    cellId: 0be4eadb-2a47-498a-9032-ba71a8322afb # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #Create a heatmap of the correlations. Examine if there is any predictive power or multicollinearlity.
+        sns.heatmap(corr_df, cmap=sns.diverging_palette(230, 20, as_cmap=True), annot=True);
+  - cellType: CODE
+    cellId: f982ec45-02c7-451d-a667-6e5b9c9363d8 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #Save our model-ready table with imputed values as a Snowflake table
+        readmissions_df_features.write.mode("overwrite").save_as_table("analytics.readmit.readmissions_imp")
+  - cellType: CODE
+    cellId: 009d8b60-8750-47d1-afe8-70c97e8b1065 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #The staging area will surface as place to put python objects for future use (for example model scoring)
+        session.sql("CREATE OR REPLACE STAGE readmissions_model_stage").collect()
+  - cellType: CODE
+    cellId: 41d2550d-7a47-4102-8c15-655f3255b72a # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |+
+        #Define a function for building a logistic regression model
+        def train_model(session: Session, 
+            training_table: str, 
+            feature_columns: list, 
+            target_variable: str,
+            model_name: str,
+        ) -> T.Variant:
+            
+            #Import packages for modeling
+            from sklearn.linear_model import LogisticRegression
+            from sklearn.model_selection import train_test_split
+            from joblib import dump
+
+            #Specify the table for training the model. The pandas dataframe will live on the Snowflake compute.
+            readmissions_py_df=session.table(training_table).to_pandas()
+            
+            #Create our input and output features
+            X=readmissions_py_df[feature_columns]
+            y=readmissions_py_df[target_variable]
+
+            #Split the data into a train and test dataset. 75% train / 25% test
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state = 99)
+
+            #Fit the model
+            model = LogisticRegression().fit(X_train,y_train)
+            
+          # Save model
+            dump(model, "/tmp/" + model_name)
+            session.file.put(
+                "/tmp/" + model_name,
+                "@readmissions_model_stage",
+                auto_compress=False,
+                overwrite=True
+            )
+
+
+            #Check and return model accuracy based on our two data sets
+            return {"Misclassification Rate on Train": round(model.score(X_train, y_train),3), 
+                    "Misclassification Rate on Test": round(model.score(X_test, y_test),3)}
+
+  - cellType: CODE
+    cellId: 0c294e34-eddf-484b-9c60-eaecdce85ec1 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #In Snowflake, when running a model function - we need to first register it as a stored procedure. We will store the function in a stage created earlier.
+        train_model_snowflake = session.sproc.register(func=train_model, 
+                                                        name="sproc_train_model", 
+                                                        is_permanent=True, 
+                                                        replace=True, 
+                                                        stage_location="@readmissions_model_stage", 
+                                                        packages=["snowflake-snowpark-python", "scikit-learn", "joblib"])
+  - cellType: CODE
+    cellId: 4d06e645-c474-44f9-9149-4f064b4c8159 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: session.sql("alter warehouse datasci_wh set warehouse_size = xlarge").collect()
+  - cellType: CODE
+    cellId: 4791e95e-460a-4e8e-b1c7-8498ed6ca8f2 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        # Specify input variables, the labeled variable, and the input dataset
+        training_table = "analytics.readmit.readmissions_imp" 
+        feature_cols = ["PATIENT_AGE",'BMI','LENGTH_OF_STAY','ORDER_SET_USED','CHRONIC_CONDITIONS_NUMBER', 'SBUX_COUNT'] 
+        target_col = "DV_READMIT_FLAG"
+        model_name = "readmit_logistic.sav"
+
+
+        # Call the training stored procedure and see the misclassification rate outputs
+        feature_contributions = train_model_snowflake(session,
+            training_table,
+            feature_cols,
+            target_col,
+            model_name)
+        print(feature_contributions)
+  - cellType: CODE
+    cellId: b6e766ec-04d9-44d5-8362-25191f171874 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: session.sql("alter warehouse datasci_wh set warehouse_size=small").collect()
+  - cellType: CODE
+    cellId: f91ea432-5932-4ff6-b19a-aa4d8959042a # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #Define a function for prediction with our model file
+        def logistic_predict(X: pd.DataFrame) -> pd.Series:
+            
+            # Import packages
+            import sys
+            from joblib import load
+
+            # Get the import directory where the model file is stored
+            import_dir = sys._xoptions["snowflake_import_directory"]
+
+            # Load the model
+            model = load(import_dir + "readmit_logistic.sav")
+
+            # Get predictions
+            predictions = model.predict(X)
+
+            # Return rounded predictions
+            return predictions.round(2)
+  - cellType: CODE
+    cellId: b0cfc438-e600-47f5-a8a5-6cb555e8c90d # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #Register our UDF for use
+        logistic_predict_sales_snowflake = session.udf.register(
+            func=logistic_predict,
+            name="udf_logistic_readmit_predict",
+            stage_location="@readmissions_model_stage",
+            input_types=[T.FloatType()] * len(feature_cols),
+            return_type=T.FloatType(),
+            replace=True,
+            is_permanent=True,
+            imports=["@readmissions_model_stage/readmit_logistic.sav"],
+            packages=["scikit-learn", "joblib"]
+        )
+  - cellType: CODE
+    cellId: 2a7d0c3a-a947-4e1e-96b1-7224da31bbaf # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #How does our model fair on our train dataset?
+        train_pred = readmissions_df_features.select(
+            "DV_READMIT_FLAG",
+            logistic_predict_sales_snowflake(*feature_cols).alias("prediction")
+        )
+        train_pred.show()
+  - cellType: CODE
+    cellId: 73505138-1470-4e52-900b-1496fdd5f0ce # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #Predict readmissions of our new patients
+        new_patients_df=session.table('new_patients_enriched')
+        new_patients_imp = new_patients_df.fillna(0, subset="SBUX_COUNT")
+        new_patients_imp.write.mode("overwrite").save_as_table("analytics.readmit.new_patients_imp")
+        new_patients_predictions_df = new_patients_imp.select("NPI", "HOSPITAL_LAT", "HOSPITAL_LONG", "HOSPITAL_NAME", "HOSPITAL_STATE", logistic_predict_sales_snowflake(*feature_cols).alias("predicted_readmission"))
+        new_patients_predictions_df.show()
+  - cellType: CODE
+    cellId: f509867c-35cb-4285-b7d1-02d1985da389 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        #Save our predicted output Snowpark dataframe as a permanent table
+        new_patients_predictions_df.write.mode("overwrite").save_as_table("new_patient_predictions_snowpark")
+  - cellType: SQL
+    cellId: 547b7e10-1d81-4541-8554-a7ff35fb30f2 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |
+        create or replace table analytics.readmit.new_jersey_slice_snowpark as 
+            select distinct(hospital_name), hospital_lat, hospital_long, sum(predicted_readmission) as total_pred_readmits
+            from analytics.readmit.new_patient_predictions_snowpark
+            where hospital_state='NJ'
+            group by hospital_name, hospital_lat, hospital_long;
+      dataFrameCell: false
+      dataConnectionId: cc1bc38b-f270-4fe9-a1b9-06106161b0d8
+      resultVariableName: dataframe
+      useRichDisplay: false
+      sqlCellOutputType: PANDAS
+      useQueryMode: false
+      castDecimals: true
+      useNativeDates: true
+      allowDuplicateColumns: false
+      tableDisplayConfig: null
+  - cellType: CODE
+    cellId: 15637441-c9d3-4f07-8dac-a2205874eec2 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: |-
+        import plotly.express as px
+
+
+        # Pull location predictions into a pandas DataFrame
+        nj_predictions=session.table('new_jersey_slice_snowpark')
+        nj_predictions_df = nj_predictions.to_pandas()
+
+        # Visualize on a map
+        # This is a prototype of what we'll eventually make in Tableau
+        # Where are our providers with the most predicted readmissions?
+        fig = px.scatter_mapbox(
+            nj_predictions_df, 
+            lat="HOSPITAL_LAT", 
+            lon="HOSPITAL_LONG", 
+            hover_name="HOSPITAL_NAME", 
+            size="TOTAL_PRED_READMITS",
+            color="TOTAL_PRED_READMITS",
+            zoom=8, 
+            height=800,
+            width=1000
+        )
+
+        fig.update_layout(mapbox_style="open-street-map")
+        fig.show()
+  - cellType: CODE
+    cellId: 932e44bd-0abd-4e73-bcc2-7c7f807920b4 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
+    cellLabel: null
+    config:
+      source: session.close()
+appLayout:
+  fullWidth: false
+  visibleMetadataFields:
+    - NAME
+    - DESCRIPTION
+    - AUTHOR
+    - LAST_EDITED
+    - LAST_RUN
+    - CATEGORIES
+    - STATUS
+    - TABLE_OF_CONTENTS
+  rows:
+    - columns:
+        - start: 0
+          end: 120
+          elements:
+            - showSource: false
+              hideOutput: false
+              type: CELL
+              cellId: 8a3c3132-9ca2-4e36-bbf3-67d762f7b79f
+              height: null
+              showLabel: true
+    - columns:
+        - start: 0
+          end: 120
+          elements:
+            - showSource: false
+              hideOutput: false
+              type: CELL
+              cellId: d9d981f1-bbef-49d9-986a-067f7ef9cfa0
+              height: null
+              showLabel: true
+    - columns:
+        - start: 0
+          end: 120
+          elements:
+            - showSource: false
+              hideOutput: false
+              type: CELL
+              cellId: 0be4eadb-2a47-498a-9032-ba71a8322afb
+              height: null
+              showLabel: true
+    - columns:
+        - start: 0
+          end: 120
+          elements:
+            - showSource: false
+              hideOutput: false
+              type: CELL
+              cellId: 009d8b60-8750-47d1-afe8-70c97e8b1065
+              height: null
+              showLabel: true
+    - columns:
+        - start: 0
+          end: 120
+          elements:
+            - showSource: false
+              hideOutput: false
+              type: CELL
+              cellId: 15637441-c9d3-4f07-8dac-a2205874eec2
+              height: null
+              showLabel: true
