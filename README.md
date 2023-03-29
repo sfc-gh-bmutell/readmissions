@@ -1,2 +1,2 @@
 # Readmissions Demo
-![My Image](Readmissions Demo Flow.png)
+![Readmissions_Demo_Flow](Readmissions_Demo_Flow.jpg)
