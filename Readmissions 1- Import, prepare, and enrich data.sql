@@ -12,11 +12,18 @@ create schema analytics.readmit;
 use schema analytics.readmit;
 create stage load_stage;
 
+--Create warehouses for each of the vignettes: load data and train a model in isolation without resource contention
 create or replace warehouse datasci_wh
     warehouse_size=small
     auto_resume=true
     auto_suspend=60;
 use warehouse datasci_wh;
+
+create or replace warehouse load_wh
+    warehouse_size=xsmall
+    auto_resume=true
+    auto_suspend=60;
+use warehouse load_wh;
 
 --Use SnowSQL to put the CSVs into the load_stage
 
