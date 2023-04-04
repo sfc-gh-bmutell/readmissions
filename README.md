@@ -10,6 +10,7 @@ Capabilities and concepts: worksheet context, stages, SnowSQL, file formats, cop
 
 ### Vignette 2: Feature engineering and predictive modeling with Snowpark for Python
 Note: this vignette is available for Hex and JuPyTer notebooks. The Hex notebook leverages a native Snowpark data connection in Hex. For more information on configuring that connection, please see the [Hex documentation](https://learn.hex.tech/docs/connect-to-data/data-connections/snowpark).
+
 In the second vignette we will use Snowpark for Python to further prepare the data for modeling by imputing missing values. We will use stored procedures and user defined functions to train a scikit-learn logistic regression model to predict readmission. Once we have our predictive model we will score new patients and prototype how we want to deliver our predictions in a visualization. 
  
 Concepts and capabilities: Snowpark for Python, Snowpark dataframes and dataframe API, SPROC and UDF with custom Python logic in Anaconda sandbox, moving data from Snowflake to Python client, saving Snowpark dataframes as permanent Snowflake tables for reuse 
