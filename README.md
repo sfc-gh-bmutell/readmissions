@@ -19,7 +19,7 @@ In the second vignette we will use Snowpark for Python to further prepare the da
  
 Concepts and capabilities: Snowpark for Python, Snowpark dataframes and dataframe API, SPROC and UDF with custom Python logic in Anaconda sandbox, moving data from Snowflake to Python client, saving Snowpark dataframes as permanent Snowflake tables for reuse 
 
-### Vignette 3: Predicting patients and preparation for outreach
+### Vignette 3: Predicting patient readmission and governance for outreach
 Once we have predicted whether or not our new patients will be readmitted, we want to enable our outreach coordinators. In this vignette we will create a role for our outreach coordinator and grant them limited access to data and compute (MCW, to support concurrency for BI). We create governance policies that allow this limited outreach coordniator role to only see patients that have been predicted to be readmitted and columns relevant to their outreach. 
 
 Concepts and capabilities: RBAC, isolated compute, multi-cluster warehouse for concurrency, row access policies, dynamic data masking, conditional masking
