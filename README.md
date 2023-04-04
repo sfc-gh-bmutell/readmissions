@@ -10,7 +10,7 @@ The datasets for this demo are found in the `readmissions.zip` folder in this re
 ### Vignette 1: Import, prepare, and enrich data
 In the first vignette we import our data and enrich it with zip-code level data from the Snowflake Marketplace. Once our first-party data is enriched it is ready for modeling.
 
-Capabilities and concepts: worksheet context, stages, SnowSQL, file formats, copy data into table, secure data sharing via Marketplace
+Concepts and capabilities: worksheet context, stages, SnowSQL, file formats, copy data into table, secure data sharing via Marketplace
 
 ### Vignette 2: Feature engineering and predictive modeling with Snowpark for Python
 Note: this vignette is available for Hex and JuPyTer notebooks. The Hex notebook leverages a native Snowpark data connection in Hex. For more information on configuring that connection, please see the [Hex documentation](https://learn.hex.tech/docs/connect-to-data/data-connections/snowpark).
