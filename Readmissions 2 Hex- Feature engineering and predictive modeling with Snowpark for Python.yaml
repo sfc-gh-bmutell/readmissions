@@ -1,6 +1,6 @@
 schemaVersion: 2
 meta:
-  sourceVersionId: e0ccdb45-1c3f-4f7e-b76f-e3eb6978252f # DO NOT CHANGE - Hex uses this to match up project versions when reimporting the file
+  sourceVersionId: 5d0bc793-38d8-46e1-9459-b08a2d892132 # DO NOT CHANGE - Hex uses this to match up project versions when reimporting the file
   description: ""
   projectId: b36107a4-3b10-4373-8196-60f29b0349bb # DO NOT CHANGE - Unique ID of the project from which this file was generated
   title: "Readmissions 2 Hex: Feature engineering and predictive modeling with Snowpark for Python"
@@ -353,7 +353,7 @@ cells:
       richText:
         - type: paragraph
           children:
-            - text: Specify our inputs, output, training table, and submit those values into our stored procedure
+            - text: Specify our inputs, output, training table, submit those values into our stored procedure, and run the training SPROC
   - cellType: CODE
     cellId: 4791e95e-460a-4e8e-b1c7-8498ed6ca8f2 # DO NOT CHANGE - Hex uses this to match up cells when reimporting the file, and detect any changes to existing cells
     cellLabel: null
