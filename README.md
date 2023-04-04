@@ -3,6 +3,10 @@
 
 This demo is based on some synthesized data consisting of of attributes for providers, patients, and the patient's inpatient stay. We will build a model on historical data to predict whether or not a patient will be readmitted to the hospital within the next 30 days. 
 
+### Data
+The datasets for this demo are found in the readmissions.zip folder in this repository. There are two CSVs: 1) historical patient data with readmission (yes/no) and 2) new patients for whom we will predict readmission. 
+
+
 ### Vignette 1: Import, prepare, and enrich data
 In the first vignette we import our data and enrich it with zip-code level data from the Snowflake Marketplace. Once our first-party data is enriched it is ready for modeling.
 
